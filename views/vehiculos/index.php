@@ -1,19 +1,18 @@
 <?php
 require_once __DIR__ . '/../../controllers/VehicleController.php';
 
-$vc = new VehicleController($db_instance->conn);
+$vehicleController = new VehicleController($db_instance->conn);
 
 $msg = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
-    $ok  = $vc->delete((int)$_POST['id']);
+    $resultado  = $vehicleController->delete((int)$_POST['id']);
     $msg = $ok ? 'Vehículo eliminado.' : 'Error al eliminar.';
 }
 
 if (isset($_GET['msg'])) $msg = $_GET['msg'];
 
-$vehiculos = $vc->index();
-$titulo = 'Vehículos';
+$vehiculos = $vehicleController->index();
 $vista  = __FILE__;
 ?>
 <!DOCTYPE html>
