@@ -1,16 +1,19 @@
 <?php
 require_once __DIR__ . '/../../controllers/PersonController.php';
 
-$pc    = new PersonController($db_instance->conn);
-$error = '';
+$personastore   = new PersonController($db_instance->conn);
+$errors = [];
+$msg = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $ok = $pc->store($_POST);
-    if ($ok) {
+    $resultado = $personastore->store($_POST);
+    if ($resultado) {
         header('Location: index.php?msg=Persona registrada correctamente.');
         exit;
+    } else {
+        $errors = $personastore->getErrors();
     }
-    $error = 'Error al registrar la persona.';
+    
 }
 ?>
 <!DOCTYPE html>
@@ -33,25 +36,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <h1 class="text-xl font-bold text-gray-800 mb-4">Registrar Persona</h1>
 
-    <?php if ($error): ?>
-        <div class="mb-4 px-4 py-2 bg-red-100 text-red-700 rounded text-sm">
-            <?= htmlspecialchars($error) ?>
-        </div>
-    <?php endif; ?>
+<?php if (!empty($errors)): ?>
+    <div class="mb-4 px-4 py-3 bg-red-100 text-red-700 rounded text-sm shadow-sm">
+        <strong class="font-bold block mb-1">Por favor corrige los siguientes errores:</strong>
+        <?= implode('<br>', array_map('htmlspecialchars', $errors)) ?>
+    </div>
+<?php endif; ?>
+    
 
     <div class="bg-white rounded shadow p-6">
         <form method="POST" class="grid grid-cols-2 gap-4">
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Número de Cédula</label>
-                <input type="number" name="numero_cedula"
+                <input name="numero_cedula"
                        value="<?= htmlspecialchars($_POST['numero_cedula'] ?? '') ?>"
                        class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Rol *</label>
-                <select name="rol" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+                <select name="rol"  class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
                     <option value="">-- Seleccione --</option>
                     <option value="conductor"   <?= ($_POST['rol'] ?? '') === 'conductor'   ? 'selected' : '' ?>>Conductor</option>
                     <option value="propietario" <?= ($_POST['rol'] ?? '') === 'propietario' ? 'selected' : '' ?>>Propietario</option>
@@ -60,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Primer Nombre *</label>
-                <input type="text" name="primer_nombre" required maxlength="255"
+                <input type="text" name="primer_nombre" maxlength="255"
                        value="<?= htmlspecialchars($_POST['primer_nombre'] ?? '') ?>"
                        class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
             </div>
@@ -74,14 +79,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="col-span-2">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Apellidos *</label>
-                <input type="text" name="apellidos" required maxlength="255"
+                <input type="text" name="apellidos" maxlength="255"
                        value="<?= htmlspecialchars($_POST['apellidos'] ?? '') ?>"
                        class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-                <input type="number" name="telefono"
+                <input name="telefono"
                        value="<?= htmlspecialchars($_POST['telefono'] ?? '') ?>"
                        class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
             </div>

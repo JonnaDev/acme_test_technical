@@ -1,18 +1,18 @@
 <?php
 require_once __DIR__ . '/../../controllers/PersonController.php';
 
-$pc = new PersonController($db_instance->conn);
+$personcontroller = new PersonController($db_instance->conn);
 
 $msg = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
-    $ok  = $pc->delete((int)$_POST['id']);
-    $msg = $ok ? 'Persona eliminada.' : 'Error al eliminar.';
+    $eliminar_persona  = $pc->delete((int)$_POST['id']);
+    $msg = $eliminar_persona ? 'Persona eliminada.' : 'Error al eliminar.';
 }
 
 if (isset($_GET['msg'])) $msg = $_GET['msg'];
 
-$personas = $pc->index();
+$personas = $personcontroller->index();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -33,7 +33,7 @@ $personas = $pc->index();
 <div class="max-w-6xl mx-auto p-6">
 
     <?php if ($msg): ?>
-        <div class="mb-4 px-4 py-2 rounded text-sm <?= str_starts_with($msg,'Error') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700' ?>">
+        <div class="mb-4 px-4 py-2 rounded text-sm bg-green-100 text-green-700">
             <?= htmlspecialchars($msg) ?>
         </div>
     <?php endif; ?>

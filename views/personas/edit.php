@@ -1,27 +1,27 @@
 <?php
 require_once __DIR__ . '/../../controllers/PersonController.php';
 
-$pc = new PersonController($db_instance->conn);
+$person = new PersonController($db_instance->conn);
 
 $id    = (int)($_GET['id'] ?? $_POST['id'] ?? 0);
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $ok = $pc->update($id, $_POST);
-    if ($ok) {
+    $resultado = $person->update($id, $_POST);
+    if ($resultado) {
         header('Location: index.php?msg=Persona actualizada correctamente.');
         exit;
     }
     $error = 'Error al actualizar la persona.';
 }
 
-$persona = $pc->show($id);
+$persona = $person->show($id);
 if (!$persona) {
     header('Location: index.php?msg=Error: persona no encontrada.');
     exit;
 }
 
-$d = ($_SERVER['REQUEST_METHOD'] === 'POST') ? $_POST : $persona;
+$datos = ($_SERVER['REQUEST_METHOD'] === 'POST') ? $_POST : $persona;
 ?>
 <!DOCTYPE html>
 <html lang="es">
