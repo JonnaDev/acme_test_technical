@@ -1,27 +1,26 @@
 <?php
 require_once __DIR__ . '/../../controllers/PersonController.php';
 
-$person = new PersonController($db_instance->conn);
+$personController = new PersonController($db_instance->conn);
 
-$id    = (int)($_GET['id'] ?? $_POST['id'] ?? 0);
-$error = '';
+$id      = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $resultado = $person->update($id, $_POST);
-    if ($resultado) {
-        header('Location: index.php?msg=Persona actualizada correctamente.');
+    $id     = (int)$_POST['id'];
+    $result = $personController->update($id, $_POST);
+    if ($result == true) {
+        header('Location: index.php?msg=' . urlencode('Persona actualizada correctamente'));
         exit;
     }
-    $error = 'Error al actualizar la persona.';
+    $errors = $personController->getErrors();
 }
 
-$persona = $person->show($id);
+$persona = $personController->show($id);
 if (!$persona) {
-    header('Location: index.php?msg=Error: persona no encontrada.');
+    header('Location: index.php?msg404=' . urlencode('Persona no encontrada.'));
     exit;
 }
-
-$datos = ($_SERVER['REQUEST_METHOD'] === 'POST') ? $_POST : $persona;
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -29,101 +28,134 @@ $datos = ($_SERVER['REQUEST_METHOD'] === 'POST') ? $_POST : $persona;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editar Persona – ACME</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        body { background:#f4f6f9; font-family:'Segoe UI',sans-serif; }
+        .navbar-brand { font-weight:700; color:#e8a020 !important; }
+        .nav-link.active { color:#e8a020 !important; font-weight:600; }
+        .card { border:none; box-shadow:0 2px 8px rgba(0,0,0,.08); border-radius:10px; }
+        .card-header { background:#1a3c5e; color:#fff; border-radius:10px 10px 0 0 !important; }
+        .btn-primary-acme { background:#1a3c5e; color:#fff; border:none; }
+        .btn-primary-acme:hover { background:#122c46; color:#fff; }
+    </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body>
 
-<nav class="bg-blue-800 text-white px-6 py-3 flex items-center gap-6">
-    <span class="font-bold text-lg">ACME Transportes</span>
-    <a href="../vehiculos/index.php" class="text-sm hover:underline">Vehículos</a>
-    <a href="index.php"              class="text-sm underline">Personas</a>
+<nav class="navbar navbar-expand-lg navbar-dark" style="background:#1a3c5e;">
+    <div class="container">
+        <a class="navbar-brand" href="../vehiculos/index.php"><i class="bi bi-truck-front-fill me-2"></i>ACME Transportes S.A.</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="../vehiculos/index.php"><i class="bi bi-car-front me-1"></i>Vehículos</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="index.php"><i class="bi bi-people me-1"></i>Personas</a>
+                </li>
+            </ul>
+        </div>
+    </div>
 </nav>
 
-<div class="max-w-2xl mx-auto p-6">
-
-    <h1 class="text-xl font-bold text-gray-800 mb-4">
-        Editar Persona — <span class="text-blue-700"><?= htmlspecialchars($persona['primer_nombre'] . ' ' . $persona['apellidos']) ?></span>
-    </h1>
-
-    <?php if ($error): ?>
-        <div class="mb-4 px-4 py-2 bg-red-100 text-red-700 rounded text-sm">
-            <?= htmlspecialchars($error) ?>
+<div class="container mt-4">
+    <div class="card mx-auto" style="max-width:720px;">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-pencil-square me-2"></i>Editar Persona
+                <span class="text-warning ms-2">
+                    <?= htmlspecialchars('#' .$persona['id'] . ' - ' . $persona['primer_nombre'] . ' ' .  ' ' . $persona['apellidos']) ?>
+                </span>
+            </h5>
         </div>
-    <?php endif; ?>
+        <div class="card-body">
 
-    <div class="bg-white rounded shadow p-6">
-        <form method="POST" class="grid grid-cols-2 gap-4">
-            <input type="hidden" name="id" value="<?= $persona['id'] ?>">
+            <?php if (!empty($errors)): ?>
+                <div class="mb-4 px-4 py-3 bg-red-100 text-red-700 rounded text-sm shadow-sm">
+                    <strong class="font-bold block mb-1">Por favor corrige los siguientes errores:</strong>
+                    <?= implode('<br>', array_map('htmlspecialchars', $errors)) ?>
+                </div>
+            <?php endif; ?>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Número de Cédula</label>
-                <input type="number" name="numero_cedula"
-                       value="<?= htmlspecialchars($d['numero_cedula'] ?? '') ?>"
-                       class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
-            </div>
+            <?php $p = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : $persona; ?>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Rol *</label>
-                <select name="rol" required class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
-                    <option value="conductor"   <?= ($d['rol'] ?? '') === 'conductor'   ? 'selected' : '' ?>>Conductor</option>
-                    <option value="propietario" <?= ($d['rol'] ?? '') === 'propietario' ? 'selected' : '' ?>>Propietario</option>
-                </select>
-            </div>
+            <form method="POST" novalidate>
+                <input type="hidden" name="id" value="<?= $persona['id'] ?>">
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Primer Nombre *</label>
-                <input type="text" name="primer_nombre" required maxlength="255"
-                       value="<?= htmlspecialchars($d['primer_nombre'] ?? '') ?>"
-                       class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
-            </div>
+                <div class="row g-3">
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Segundo Nombre</label>
-                <input type="text" name="segundo_nombre" maxlength="255"
-                       value="<?= htmlspecialchars($d['segundo_nombre'] ?? '') ?>"
-                       class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
-            </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Número de Cédula</label>
+                        <input type="number" class="form-control" name="numero_cedula"
+                               value="<?= htmlspecialchars($p['numero_cedula'] ?? '') ?>">
+                    </div>
 
-            <div class="col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Apellidos *</label>
-                <input type="text" name="apellidos" required maxlength="255"
-                       value="<?= htmlspecialchars($d['apellidos'] ?? '') ?>"
-                       class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
-            </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Primer Nombre <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="primer_nombre"
+                               maxlength="255"
+                               value="<?= htmlspecialchars($p['primer_nombre'] ?? '') ?>">
+                    </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
-                <input type="number" name="telefono"
-                       value="<?= htmlspecialchars($d['telefono'] ?? '') ?>"
-                       class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
-            </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Segundo Nombre</label>
+                        <input type="text" class="form-control" name="segundo_nombre"
+                               maxlength="255"
+                               value="<?= htmlspecialchars($p['segundo_nombre'] ?? '') ?>">
+                    </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Ciudad</label>
-                <input type="text" name="ciudad" maxlength="255"
-                       value="<?= htmlspecialchars($d['ciudad'] ?? '') ?>"
-                       class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
-            </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Apellidos <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="apellidos"
+                               maxlength="255"
+                               value="<?= htmlspecialchars($p['apellidos'] ?? '') ?>">
+                    </div>
 
-            <div class="col-span-2">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
-                <input type="text" name="direccion" maxlength="255"
-                       value="<?= htmlspecialchars($d['direccion'] ?? '') ?>"
-                       class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
-            </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Teléfono</label>
+                        <input type="number" class="form-control" name="telefono"
+                               value="<?= htmlspecialchars($p['telefono'] ?? '') ?>">
+                    </div>
 
-            <div class="col-span-2 flex justify-end gap-3 pt-2">
-                <a href="index.php" class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded hover:bg-gray-50">
-                    Cancelar
-                </a>
-                <button type="submit" class="px-4 py-2 text-sm bg-blue-700 text-white rounded hover:bg-blue-800">
-                    Actualizar
-                </button>
-            </div>
+                    <div class="col-md-8">
+                        <label class="form-label fw-semibold">Dirección</label>
+                        <input type="text" class="form-control" name="direccion"
+                               maxlength="255"
+                               value="<?= htmlspecialchars($p['direccion'] ?? '') ?>">
+                    </div>
 
-        </form>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Ciudad</label>
+                        <input type="text" class="form-control" name="ciudad"
+                               maxlength="255"
+                               value="<?= htmlspecialchars($p['ciudad'] ?? '') ?>">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Rol <span class="text-danger">*</span></label>
+                        <select class="form-select" name="rol">
+                            <option value="conductor"   <?= ($p['rol'] ?? '') === 'conductor'   ? 'selected' : '' ?>>Conductor</option>
+                            <option value="propietario" <?= ($p['rol'] ?? '') === 'propietario' ? 'selected' : '' ?>>Propietario</option>
+                        </select>
+                    </div>
+
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <a href="index.php" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary-acme">
+                        <i class="bi bi-floppy me-1"></i>Actualizar
+                    </button>
+                </div>
+
+            </form>
+        </div>
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

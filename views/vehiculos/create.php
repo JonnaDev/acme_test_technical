@@ -2,28 +2,28 @@
 require_once __DIR__ . '/../../controllers/VehicleController.php';
 require_once __DIR__ . '/../../controllers/PersonController.php';
 
-$vc = new VehicleController($db_instance->conn);
-$pc = new PersonController($db_instance->conn);
+$vehiclecontroller = new VehicleController($db_instance->conn);
+$personcontroller = new PersonController($db_instance->conn);
 
-$error = '';
+$errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $conductor_id = (int)$_POST['conductor_id'];
 
-    if (!$vc->conductorDisponible($conductor_id)) {
+    if (!$vehiclecontroller->conductorDisponible($conductor_id)) {
         $error = 'Error: ese conductor ya tiene un vehículo asignado.';
     } else {
-        $ok = $vc->store($_POST);
-        if ($ok) {
+        $resultado = $vehiclecontroller->store($_POST);
+        if ($resultado) {
             header('Location: index.php?msg=Vehículo registrado correctamente.');
             exit;
         }
-        $error = 'Error al registrar el vehículo.';
+        $errors = $vehiclecontroller->getErrors();
     }
 }
 
-$conductores  = $pc->porRol('conductor');
-$propietarios = $pc->porRol('propietario');
+$conductores  = $personcontroller->porRol('conductor');
+$propietarios = $personcontroller->porRol('propietario');
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -45,9 +45,10 @@ $propietarios = $pc->porRol('propietario');
 
     <h1 class="text-xl font-bold text-gray-800 mb-4">Registrar Vehículo</h1>
 
-    <?php if ($error): ?>
-        <div class="mb-4 px-4 py-2 bg-red-100 text-red-700 rounded text-sm">
-            <?= htmlspecialchars($error) ?>
+    <?php if (!empty($errors)): ?>
+        <div class="mb-4 px-4 py-3 bg-red-100 text-red-700 rounded text-sm shadow-sm">
+            <strong class="font-bold block mb-1">Por favor corrige los siguientes errores:</strong>
+            <?= implode('<br>', array_map('htmlspecialchars', $errors)) ?>
         </div>
     <?php endif; ?>
 
@@ -56,28 +57,28 @@ $propietarios = $pc->porRol('propietario');
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Placa *</label>
-                <input type="text" name="placa" required maxlength="10"
+                <input type="text" name="placa"  maxlength="10"
                        value="<?= htmlspecialchars($_POST['placa'] ?? '') ?>"
                        class="w-full border border-gray-300 rounded px-3 py-2 text-sm uppercase">
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Color *</label>
-                <input type="text" name="color" required maxlength="30"
+                <input type="text" name="color"  maxlength="30"
                        value="<?= htmlspecialchars($_POST['color'] ?? '') ?>"
                        class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Marca *</label>
-                <input type="text" name="marca" required maxlength="50"
+                <input type="text" name="marca"  maxlength="50"
                        value="<?= htmlspecialchars($_POST['marca'] ?? '') ?>"
                        class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Tipo *</label>
-                <select name="tipo_vehiculo" required
+                <select name="tipo_vehiculo" 
                         class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
                     <option value="">-- Seleccione --</option>
                     <option value="particular" <?= ($_POST['tipo_vehiculo'] ?? '') === 'particular' ? 'selected' : '' ?>>Particular</option>
@@ -89,7 +90,7 @@ $propietarios = $pc->porRol('propietario');
                 <label class="block text-sm font-medium text-gray-700 mb-1">
                     Conductor * <span class="text-gray-400 font-normal">(máx. 1 vehículo)</span>
                 </label>
-                <select name="conductor_id" required
+                <select name="conductor_id"
                         class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
                     <option value="">-- Seleccione --</option>
                     <?php foreach ($conductores as $c): ?>
@@ -103,7 +104,7 @@ $propietarios = $pc->porRol('propietario');
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Propietario *</label>
-                <select name="propietario_id" required
+                <select name="propietario_id"
                         class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
                     <option value="">-- Seleccione --</option>
                     <?php foreach ($propietarios as $p): ?>

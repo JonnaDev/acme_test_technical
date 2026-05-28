@@ -2,38 +2,32 @@
 require_once __DIR__ . '/../../controllers/VehicleController.php';
 require_once __DIR__ . '/../../controllers/PersonController.php';
 
-$vc = new VehicleController($db_instance->conn);
-$pc = new PersonController($db_instance->conn);
+$vehicleController = new VehicleController($db_instance->conn);
+$personController  = new PersonController($db_instance->conn);
 
-$id    = (int)($_GET['id'] ?? $_POST['id'] ?? 0);
-$error = '';
+$id     = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $conductor_id = (int)$_POST['conductor_id'];
-
-    if (!$vc->conductorDisponible($conductor_id, $id)) {
-        $error = 'Error: ese conductor ya tiene otro vehículo asignado.';
-    } else {
-        $ok = $vc->update($id, $_POST);
-        if ($ok) {
-            header('Location: index.php?msg=Vehículo actualizado correctamente.');
-            exit;
-        }
-        $error = 'Error al actualizar el vehículo.';
+    $id     = (int)$_POST['id'];
+    $result = $vehicleController->update($id, $_POST);
+    if ($result) {
+        header('Location: index.php?msg=' . urlencode('Vehículo actualizado correctamente.'));
+        exit;
     }
+    $errors = $vehicleController->getErrors();
 }
 
-$v = $vc->show($id);
-if (!$v) {
-    header('Location: index.php?msg=Error: vehículo no encontrado.');
+$vehiculo = $vehicleController->show($id);
+if (!$vehiculo) {
+    header('Location: index.php?msg=' . urlencode('Vehículo no encontrado.'));
     exit;
 }
 
-// En error de validación muestra $_POST, si no los datos del BD
-$d = ($_SERVER['REQUEST_METHOD'] === 'POST') ? $_POST : $v;
+$v = ($_SERVER['REQUEST_METHOD'] === 'POST') ? $_POST : $vehiculo;
 
-$conductores  = $pc->porRol('conductor');
-$propietarios = $pc->porRol('propietario');
+$conductores  = $personController->porRol('conductor');
+$propietarios = $personController->porRol('propietario');
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -54,56 +48,60 @@ $propietarios = $pc->porRol('propietario');
 <div class="max-w-2xl mx-auto p-6">
 
     <h1 class="text-xl font-bold text-gray-800 mb-4">
-        Editar Vehículo — <span class="text-blue-700"><?= htmlspecialchars($v['placa']) ?></span>
+        Editar Vehículo — <span class="text-blue-700"><?= htmlspecialchars($vehiculo['placa']) ?></span>
     </h1>
 
-    <?php if ($error): ?>
-        <div class="mb-4 px-4 py-2 bg-red-100 text-red-700 rounded text-sm">
-            <?= htmlspecialchars($error) ?>
+    <?php if (!empty($errors)): ?>
+        <div class="mb-4 px-4 py-3 bg-red-100 text-red-700 rounded text-sm shadow-sm">
+            <strong class="font-bold block mb-1">Por favor corrige los siguientes errores:</strong>
+            <?= implode('<br>', array_map('htmlspecialchars', $errors)) ?>
         </div>
     <?php endif; ?>
 
     <div class="bg-white rounded shadow p-6">
         <form method="POST" class="grid grid-cols-2 gap-4">
-            <input type="hidden" name="id" value="<?= $v['id'] ?>">
+            <input type="hidden" name="id" value="<?= $vehiculo['id'] ?>">
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Placa *</label>
-                <input type="text" name="placa" required maxlength="10"
-                       value="<?= htmlspecialchars($d['placa']) ?>"
+                <input type="text" name="placa" maxlength="10"
+                       value="<?= htmlspecialchars($v['placa'] ?? '') ?>"
                        class="w-full border border-gray-300 rounded px-3 py-2 text-sm uppercase">
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Color *</label>
-                <input type="text" name="color" required maxlength="30"
-                       value="<?= htmlspecialchars($d['color']) ?>"
+                <input type="text" name="color" maxlength="30"
+                       value="<?= htmlspecialchars($v['color'] ?? '') ?>"
                        class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Marca *</label>
-                <input type="text" name="marca" required maxlength="50"
-                       value="<?= htmlspecialchars($d['marca']) ?>"
+                <input type="text" name="marca" maxlength="50"
+                       value="<?= htmlspecialchars($v['marca'] ?? '') ?>"
                        class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Tipo *</label>
-                <select name="tipo_vehiculo" required
+                <select name="tipo_vehiculo"
                         class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
-                    <option value="particular" <?= $d['tipo_vehiculo'] === 'particular' ? 'selected' : '' ?>>Particular</option>
-                    <option value="publico"    <?= $d['tipo_vehiculo'] === 'publico'    ? 'selected' : '' ?>>Público</option>
+                    <option value="particular" <?= ($v['tipo_vehiculo'] ?? '') === 'particular' ? 'selected' : '' ?>>Particular</option>
+                    <option value="publico"    <?= ($v['tipo_vehiculo'] ?? '') === 'publico'    ? 'selected' : '' ?>>Público</option>
                 </select>
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Conductor *</label>
-                <select name="conductor_id" required
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                    Conductor * <span class="text-gray-400 font-normal">(máx. 1 vehículo)</span>
+                </label>
+                <select name="conductor_id"
                         class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+                    <option value="">-- Seleccione --</option>
                     <?php foreach ($conductores as $c): ?>
                         <option value="<?= $c['id'] ?>"
-                            <?= (int)$d['conductor_id'] === $c['id'] ? 'selected' : '' ?>>
+                            <?= (int)($v['conductor_id'] ?? 0) === $c['id'] ? 'selected' : '' ?>>
                             <?= htmlspecialchars($c['primer_nombre'] . ' ' . $c['apellidos']) ?>
                         </option>
                     <?php endforeach; ?>
@@ -112,11 +110,12 @@ $propietarios = $pc->porRol('propietario');
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Propietario *</label>
-                <select name="propietario_id" required
+                <select name="propietario_id"
                         class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+                    <option value="">-- Seleccione --</option>
                     <?php foreach ($propietarios as $p): ?>
                         <option value="<?= $p['id'] ?>"
-                            <?= (int)$d['propietario_id'] === $p['id'] ? 'selected' : '' ?>>
+                            <?= (int)($v['propietario_id'] ?? 0) === $p['id'] ? 'selected' : '' ?>>
                             <?= htmlspecialchars($p['primer_nombre'] . ' ' . $p['apellidos']) ?>
                         </option>
                     <?php endforeach; ?>

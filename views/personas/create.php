@@ -8,7 +8,7 @@ $msg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $resultado = $personastore->store($_POST);
     if ($resultado) {
-        header('Location: index.php?msg=Persona registrada correctamente.');
+        header('Location: index.php?msg=' . urlencode('Persona registrada correctamente'));
         exit;
     } else {
         $errors = $personastore->getErrors();

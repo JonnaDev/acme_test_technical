@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../controllers/PersonController.php';
 $personcontroller = new PersonController($db_instance->conn);
 
 $msg = '';
+$msg404 = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
     $eliminar_persona  = $pc->delete((int)$_POST['id']);
@@ -38,6 +39,12 @@ $personas = $personcontroller->index();
         </div>
     <?php endif; ?>
 
+        <?php if ($msg404): ?>
+        <div class="mb-4 px-4 py-2 rounded text-sm bg-red-100 text-red-700">
+            <?= htmlspecialchars($msg404) ?>
+        </div>
+        <?php endif ?>
+
     <div class="flex justify-between items-center mb-4">
         <h1 class="text-xl font-bold text-gray-800">Personas registradas</h1>
         <a href="create.php" class="bg-blue-700 text-white px-4 py-2 rounded text-sm hover:bg-blue-800">
@@ -49,6 +56,7 @@ $personas = $personcontroller->index();
         <table class="w-full text-sm text-left">
             <thead class="bg-blue-800 text-white">
                 <tr>
+                    <th class="px-4 py-3">ID</th>
                     <th class="px-4 py-3">Cédula</th>
                     <th class="px-4 py-3">Nombre completo</th>
                     <th class="px-4 py-3">Teléfono</th>
@@ -64,6 +72,7 @@ $personas = $personcontroller->index();
             <?php else: ?>
                 <?php foreach ($personas as $p): ?>
                 <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3"><?= htmlspecialchars($p['id'] ?? '—') ?></td>
                     <td class="px-4 py-3"><?= htmlspecialchars($p['numero_cedula'] ?? '—') ?></td>
                     <td class="px-4 py-3 font-medium">
                         <?= htmlspecialchars(trim($p['primer_nombre'] . ' ' . ($p['segundo_nombre'] ?? '') . ' ' . $p['apellidos'])) ?>
@@ -73,7 +82,7 @@ $personas = $personcontroller->index();
                     <td class="px-4 py-3"><?= htmlspecialchars($p['direccion'] ?? '—') ?></td>
                     <td class="px-4 py-3">
                         <span class="px-2 py-0.5 rounded text-xs
-                            <?= $p['rol'] === 'conductor' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700' ?>">
+                            <?= $p['rol'] === 'conductor' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700' ?>">
                             <?= ucfirst($p['rol']) ?>
                         </span>
                     </td>
