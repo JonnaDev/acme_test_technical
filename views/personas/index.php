@@ -1,19 +1,20 @@
 <?php
 require_once __DIR__ . '/../../controllers/PersonController.php';
 
-$personcontroller = new PersonController($db_instance->conn);
-
+$personController = new PersonController($db_instance->conn);
+$msgdelete = '';
 $msg = '';
 $msg404 = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id'])) {
-    $eliminar_persona  = $pc->delete((int)$_POST['id']);
-    $msg = $eliminar_persona ? 'Persona eliminada.' : 'Error al eliminar.';
+    $eliminar_persona  = $personController->delete((int)$_POST['id']);
+    $msgdelete = $eliminar_persona ? 'Persona eliminada.' : 'Error al eliminar.';
 }
 
 if (isset($_GET['msg'])) $msg = $_GET['msg'];
+if (isset($_GET['msgdelete'])) $msg = $_GET['msgdelete'];
 
-$personas = $personcontroller->index();
+$personas = $personController->index();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -33,11 +34,18 @@ $personas = $personcontroller->index();
 
 <div class="max-w-6xl mx-auto p-6">
 
-    <?php if ($msg): ?>
-        <div class="mb-4 px-4 py-2 rounded text-sm bg-green-100 text-green-700">
-            <?= htmlspecialchars($msg) ?>
-        </div>
-    <?php endif; ?>
+        <?php if ($msg): ?>
+            <div class="mb-4 px-4 py-2 rounded text-sm bg-green-100 text-green-700">
+                <?= htmlspecialchars($msg) ?>
+            </div>
+        <?php endif; ?>
+
+        
+        <?php if ($msgdelete): ?>
+            <div class="mb-4 px-4 py-2 rounded text-sm bg-yellow-100 text-black">
+                <?= htmlspecialchars($msgdelete) ?>
+            </div>
+        <?php endif; ?>
 
         <?php if ($msg404): ?>
         <div class="mb-4 px-4 py-2 rounded text-sm bg-red-100 text-red-700">
